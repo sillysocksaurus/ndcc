@@ -47,7 +47,8 @@ function Tip({ active, payload, range }) {
 export default function StockChart({ mint, sym }) {
   const [range, setRange] = useState("1M");
   const [state, setState] = useState({ key: "", points: null, error: null });
-  const key = `${mint}|${range}`;
+  const [attempt, setAttempt] = useState(0);
+  const key = `${mint}|${range}|${attempt}`;
 
   useEffect(() => {
     let live = true;
@@ -104,9 +105,12 @@ export default function StockChart({ mint, sym }) {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <p className="absolute inset-0 grid place-items-center text-[12.5px] text-muted text-center px-6">
-            {loading ? "Loading chart…" : state.error || "No trading history for this range yet."}
-          </p>
+          <div className="absolute inset-0 grid place-items-center text-[12.5px] text-muted text-center px-6">
+            <p>
+              {loading ? "Loading chart… (can take a few seconds)" : state.error || "No trading history for this range yet."}
+              {!loading && state.error && <> <button onClick={() => setAttempt((n) => n + 1)} className="text-accent font-medium underline underline-offset-2">Try again</button></>}
+            </p>
+          </div>
         )}
       </div>
 

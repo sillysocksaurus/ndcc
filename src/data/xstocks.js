@@ -39,9 +39,19 @@ export const TOKENS = {
   // Solana DEXs (Meteora, Jupiter). 9 decimals (checked on-chain), unlike xStocks' 8.
   // `mark` comes live from Tessera's public API (see lib/tessera.js); price/liq are a
   // Jupiter snapshot. Remove the `group: "Pre-IPO"` entries to drop the family entirely.
-  tOpenAI: { name: "OpenAI T-Token",  sector: "Artificial Intelligence", mint: "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ", price: 1038.24, liq: 504797, venue: "Meteora / Jupiter", domain: "openai.com", decimals: 9, group: "Pre-IPO" },
-  tKalshi: { name: "Kalshi T-Token",  sector: "Prediction Markets",     mint: "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ", price: 447.14,  liq: 193716, venue: "Meteora / Jupiter", domain: "kalshi.com", decimals: 9, group: "Pre-IPO" },
-  tSpaceX: { name: "SpaceX T-Token",  sector: "Aerospace",              mint: "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v", price: 563.37,  liq: 117005, venue: "Meteora / Jupiter", domain: "spacex.com", decimals: 9, group: "Pre-IPO" },
+  tOpenAI: { name: "OpenAI T-Token",  sector: "Artificial Intelligence", mint: "oPAiAikWTaFj9RYoRFD35ccfwhnMcB3ThgBZRHSkjTZ", price: 1038.24, liq: 504797, venue: "Meteora / Jupiter", domain: "openai.com", decimals: 9, group: "Pre-IPO", issuer: "Tessera" },
+  tKalshi: { name: "Kalshi T-Token",  sector: "Prediction Markets",     mint: "TKLSidmLVt3cqGaaodG8tyRzoANfQwoh67AccjmubeZ", price: 447.14,  liq: 193716, venue: "Meteora / Jupiter", domain: "kalshi.com", decimals: 9, group: "Pre-IPO", issuer: "Tessera" },
+  tSpaceX: { name: "SpaceX T-Token",  sector: "Aerospace",              mint: "TSPXcLV76s6V2zDiZQ18kBfcbnjaE2ZzNT3ga2Pd99v", price: 563.37,  liq: 117005, venue: "Meteora / Jupiter", domain: "spacex.com", decimals: 9, group: "Pre-IPO", issuer: "Tessera" },
+  // PreStocks: tokenized pre-IPO stocks (each backed 1:1 by SPV exposure), 9 decimals, tradable through Jupiter.
+  // Snapshot prices/liquidity from Jupiter; live prices and reference valuations refresh from Jupiter and the PreStocks API.
+  pAnthropic: { name: "Anthropic PreStocks", sector: "Artificial Intelligence", mint: "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw", price: 1052.74, liq: 872094, venue: "Jupiter", domain: "anthropic.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "anthropic" },
+  pOpenAI: { name: "OpenAI PreStocks", sector: "Artificial Intelligence", mint: "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF", price: 1335.23, liq: 826650, venue: "Jupiter", domain: "openai.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "openai" },
+  pSpaceX: { name: "SpaceX PreStocks", sector: "Aerospace", mint: "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh", price: 117.47, liq: 111319, venue: "Jupiter", domain: "spacex.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "spacex" },
+  pAnduril: { name: "Anduril PreStocks", sector: "Defense", mint: "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB", price: 164.95, liq: 451666, venue: "Jupiter", domain: "anduril.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "anduril" },
+  pFigureAI: { name: "Figure AI PreStocks", sector: "Robotics", mint: "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd", price: 176.72, liq: 100761, venue: "Jupiter", domain: "figure.ai", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "figureai" },
+  pNeuralink: { name: "Neuralink PreStocks", sector: "Neurotech", mint: "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S", price: 446.64, liq: 245762, venue: "Jupiter", domain: "neuralink.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "neuralink" },
+  pKalshi: { name: "Kalshi PreStocks", sector: "Prediction Markets", mint: "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua", price: 881.50, liq: 99666, venue: "Jupiter", domain: "kalshi.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "kalshi" },
+  pPolymarket: { name: "Polymarket PreStocks", sector: "Prediction Markets", mint: "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP", price: 152.52, liq: 198618, venue: "Jupiter", domain: "polymarket.com", decimals: 9, group: "Pre-IPO", issuer: "PreStocks", psId: "polymarket" },
 };
 
 // Weighted baskets. Weights are percentages and sum to 100.
@@ -54,6 +64,7 @@ export const BASKETS = [
   { id: "semis",    name: "Semiconductors",    theme: "Tech",      thesis: "The chipmakers behind every AI buildout, without the hyperscalers on top.",                                       legs: [["NVDAx", 40], ["AVGOx", 35], ["AMDx", 25]] },
   { id: "cloud",    name: "Cloud & Software",  theme: "Tech",      thesis: "Enterprise software and cloud infrastructure, minus the chipmakers underneath.",                                  legs: [["MSFTx", 30], ["GOOGLx", 25], ["AMZNx", 25], ["PLTRx", 20]] },
   { id: "defensive",name: "Healthcare & Staples", theme: "Defensive", thesis: "Drugs, soda and fast food — demand that doesn't care what the market's doing.",                                 legs: [["JNJx", 25], ["LLYx", 25], ["KOx", 20], ["PEPx", 15], ["MCDx", 15]] },
+  { id: "prestocks", name: "PreStocks Frontier", theme: "Pre-IPO",   thesis: "The frontier-tech private companies as PreStocks tokens: Anthropic, OpenAI, SpaceX, Anduril and Figure AI. Volatile, thinly traded, high risk.", legs: [["pAnthropic", 30], ["pOpenAI", 25], ["pSpaceX", 20], ["pAnduril", 15], ["pFigureAI", 10]] },
   { id: "private",   name: "Private Markets",   theme: "Pre-IPO",   thesis: "Exposure to the biggest private companies, before they list: OpenAI, SpaceX and Kalshi as Tessera T-Tokens. Volatile, thinly traded, high risk.", legs: [["tOpenAI", 40], ["tSpaceX", 30], ["tKalshi", 30]] },
   { id: "fintech",  name: "Fintech Disruptors",theme: "Financials",thesis: "Banking's old guard next to the exchanges and apps trying to replace it.",                                         legs: [["JPMx", 30], ["HOODx", 25], ["COINx", 25], ["CRCLx", 20]] },
 ];

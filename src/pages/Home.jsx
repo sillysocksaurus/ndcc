@@ -62,8 +62,8 @@ export default function Home() {
       {/* Pre-IPO */}
       <Link to="/trade" className="block rounded-2xl border border-line bg-gradient-to-r from-accent/15 to-cyan/10 p-4 sm:p-5 mb-8 hover:brightness-110 transition">
         <p className="text-[12px] font-medium text-cyan">New · Pre-IPO</p>
-        <p className="text-[16px] font-semibold text-ink mt-0.5">Trade OpenAI, SpaceX and Kalshi before they list</p>
-        <p className="text-[12.5px] text-ink2 mt-1">Tessera T-Tokens on Solana, with a live premium or discount to reference price. Or grab all three in the Private Markets basket. <span className="text-accent font-medium">Explore →</span></p>
+        <p className="text-[16px] font-semibold text-ink mt-0.5">Trade Anthropic, OpenAI, SpaceX and more before they list</p>
+        <p className="text-[12.5px] text-ink2 mt-1">PreStocks and Tessera tokens on Solana, with a live premium or discount to reference price. Or grab a bundle in the PreStocks Frontier and Private Markets baskets. <span className="text-accent font-medium">Explore →</span></p>
       </Link>
 
       {/* Featured stocks */}

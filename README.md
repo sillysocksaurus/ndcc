@@ -87,7 +87,7 @@ ClawPump blocks browser requests and needs a secret key, so the app calls a smal
 
 ### 4. No key needed
 
-Jupiter (swaps and prices), GeckoTerminal (chart history, via `api/chart.js`), DexScreener and the Meteora SDK need no keys.
+Jupiter (swaps and prices), the PreStocks API (via `api/prestocks.js`), GeckoTerminal (chart history, via `api/chart.js`), DexScreener and the Meteora SDK need no keys.
 
 ### Summary of `.env`
 
@@ -117,10 +117,11 @@ There are two separate layers, both viewable and configurable from the Admin pag
 1. **Connect** with the Solana wallet-adapter; declined or failed connections are reported clearly.
 2. **Read the wallet** from Solana through your RPC. Real trades are blocked until sync completes, so nothing is sized on stale data.
 3. **Quote and swap** with Jupiter Ultra: one quote per leg, one batched signature per basket, failed legs retried alone.
-4. **Show the risk:** price impact, fees and thin-pool warnings before signing. Prices come from the Jupiter Price API; chart history from GeckoTerminal.
-5. **Launch** with the Meteora DBC SDK from the admin wallet, or with ClawPump through the server relay.
+4. **Live updates:** prices and pre-IPO reference prices refresh every 60 seconds from Jupiter, PreStocks details refresh every minute, and newly listed PreStocks tokens are added automatically (this needs the server relay running). Chart requests are queued and cached to stay under the free rate limit.
+5. **Show the risk:** price impact, fees and thin-pool warnings before signing. Prices come from the Jupiter Price API; chart history from GeckoTerminal.
+6. **Launch** with the Meteora DBC SDK from the admin wallet, or with ClawPump through the server relay.
 
-There is no database: baskets, plans, watchlist and settings live in the browser. The only server code is two small relays in `api/`.
+There is no database: baskets, plans, watchlist and settings live in the browser. The only server code is three small relays in `api/`.
 
 Code map: `src/pages` (screens), `src/hooks` (wallet, portfolio, prices), `src/lib` (Jupiter, Meteora DBC, ClawPump, charts, analytics), `src/data/xstocks.js` (token mints and baskets), `api/` (relays).
 
@@ -128,9 +129,11 @@ Code map: `src/pages` (screens), `src/hooks` (wallet, portfolio, prices), `src/l
 
 - **Main track:** a working end-to-end app for buying, holding and planning tokenized stocks with self-custody, on Solana for 24/7 markets and cheap, fast swaps.
 - **Meteora, Best Use of DBC:** equity launch console on the DBC SDK, with USDC or stock-paired quote tokens (SPYx, QQQx, NVDAx, TSLAx), a decaying trading fee plus issuer royalty, vested issuer allocation, locked liquidity, a monitor, and one-click migration to DAMM v2.
+- **PreStocks, Best Use of PreStocks:** eight PreStocks tokens (Anthropic, OpenAI, SpaceX, Anduril, Figure AI, Neuralink, Kalshi, Polymarket) tradable through Jupiter. Each expands to show the company description, reference valuation, valuation implied by the token price and supply from the PreStocks API (via the pi/prestocks relay), plus a PreStocks Frontier basket.
 - **Tessera, Pre-IPO tokens:** OpenAI, Kalshi and SpaceX T-Tokens tradable through Jupiter with a premium or discount to reference price, plus a Private Markets basket.
+- **Note:** the PreStocks bounty excludes projects that integrate other pre-IPO tokens, and NDCC lists both PreStocks and Tessera, so enter one of the two.
 - **ClawPump, Stocknized Agent:** Create a token launches through ClawPump's self-funded flow. The stock-paired Meteora pool is a separate flow and is not yet joined to it.
-- **Not entered:** PreStocks (cannot be combined with Tessera) and Pyth.
+- **Not entered:** Pyth.
 
 ## Deploying
 

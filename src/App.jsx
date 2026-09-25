@@ -4,6 +4,7 @@ import { ShoppingBasket, Sparkles, Repeat, Wallet, ShieldCheck, Sun, Moon, Rocke
 import Home from "@/pages/Home";
 import Trade from "@/pages/Trade";
 import CreateToken from "@/pages/CreateToken";
+import Partners from "@/pages/Partners";
 import Baskets from "@/pages/Baskets";
 import Launches from "@/pages/Launches";
 import Robo from "@/pages/Robo";
@@ -199,6 +200,7 @@ export default function App() {
           <Route path="/baskets" element={<Baskets />} />
           <Route path="/launches" element={<Launches />} />
           <Route path="/create" element={<CreateToken />} />
+          <Route path="/partners" element={<Partners />} />
           <Route path="/robo" element={<Robo />} />
           <Route path="/recurring" element={<Recurring />} />
           <Route path="/portfolio" element={<RequireWallet><Portfolio /></RequireWallet>} />
@@ -209,6 +211,7 @@ export default function App() {
       </main>
 
       <footer className="max-w-4xl mx-auto px-4 mt-10 text-[11.5px] leading-relaxed text-muted">
+        <p className="mb-2"><NavLink to="/partners" className="text-accent font-medium underline underline-offset-2">Built with Meteora, PreStocks, Tessera and ClawPump</NavLink></p>
         NDCC is software, not a broker, exchange or adviser. Tokenized stocks and bonding-curve launches carry a high risk of loss and may be unavailable in your jurisdiction, including the United States. Nothing here is investment advice. Trades are signed by your own wallet and cannot be reversed.
       </footer>
 

@@ -4,6 +4,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { fileURLToPath, URL } from "node:url";
 import { relay } from "./api/_clawpump.js";
 import { chartRelay } from "./api/_chart.js";
+import { prestocksRelay } from "./api/_prestocks.js";
 
 // Serves POST /api/clawpump during `npm run dev` / `npm run preview` with the same relay
 // the Vercel function uses. The env vars it reads have no VITE_ prefix, so they stay on
@@ -41,6 +42,19 @@ function chartApi() {
   return { name: "chart-api", configureServer(s) { s.middlewares.use(handler); }, configurePreviewServer(s) { s.middlewares.use(handler); } };
 }
 
+// Serves GET /api/prestocks in dev/preview with the same relay as the Vercel function.
+function prestocksApi() {
+  const handler = async (req, res, next) => {
+    if ((req.url || "").split("?")[0] !== "/api/prestocks") return next();
+    if (req.method !== "GET") { res.statusCode = 405; res.end(JSON.stringify({ error: "GET only" })); return; }
+    const { status, json } = await prestocksRelay();
+    res.statusCode = status;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(json));
+  };
+  return { name: "prestocks-api", configureServer(s) { s.middlewares.use(handler); }, configurePreviewServer(s) { s.middlewares.use(handler); } };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), ""); // all vars, including non-VITE_ ones (server-side only)
   return {
@@ -55,6 +69,7 @@ export default defineConfig(({ mode }) => {
       nodePolyfills({ globals: { Buffer: true, global: false, process: false } }),
       clawpumpApi(env),
       chartApi(),
+      prestocksApi(),
     ],
     resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
     define: { global: "globalThis" },

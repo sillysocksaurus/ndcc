@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
-import { LineChart, Search, Star, ShoppingCart, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { LineChart, Search, Star, ShoppingCart, ChevronDown, ExternalLink } from "lucide-react";
+import { usePreStocks } from "@/lib/prestocks";
 import TokenLogo from "@/components/TokenLogo";
 import StockChart from "@/components/StockChart";
 import ConvertSolSheet from "@/components/ConvertSolSheet";
@@ -11,11 +12,12 @@ import { fmtUSD, fmtPct } from "@/lib/stocklana";
 import { examplePct } from "@/lib/exampleOutlook";
 import { toast } from "@/lib/toast";
 
-const SECTORS = ["All", "Pre-IPO", ...Array.from(new Set(Object.values(TOKENS).filter((t) => !t.group).map((t) => t.sector))).sort()];
+const SECTORS = ["All", "Pre-IPO", "PreStocks", "Tessera", ...Array.from(new Set(Object.values(TOKENS).filter((t) => !t.group).map((t) => t.sector))).sort()];
 const SORTS = { popular: "Most liquid", priceDesc: "Price, high to low", priceAsc: "Price, low to high", name: "Name A–Z" };
 
 // Rough depth grade off the snapshot pool liquidity: how comfortably a normal-size buy fills.
 function depth(liq) {
+  if (liq == null) return { label: "New", cls: "bg-surface2 text-muted" }; // just listed, liquidity not measured yet
   if (liq >= 500_000) return { label: "Deep", cls: "bg-gain-soft text-gain" };
   if (liq >= 50_000) return { label: "Medium", cls: "bg-warn-soft text-warn" };
   return { label: "Thin", cls: "bg-loss-soft text-loss" };
@@ -32,10 +34,42 @@ const singleStock = (sym) => ({
   single: true,
 });
 
+const ago = (t) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 10 ? "just now" : s < 90 ? `${s}s ago` : `${Math.round(s / 60)}m ago`; };
+const fmtBig =(n) => (n >= 1e12 ? `$${(n / 1e12).toFixed(2)}T` : n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : `$${(n / 1e6).toFixed(0)}M`);
+
+// Details straight from the PreStocks API (through our relay): what the company is, the reference valuation
+// PreStocks marks it at, and what the market's token price implies.
+function PreStocksInfo({ info, psId }) {
+  const link = info?.url || `https://www.prestocks.com/${psId}`;
+  return (
+    <div className="mb-3 rounded-xl bg-surface2/60 px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[12px] font-semibold text-cyan">PreStocks · backed 1:1 by SPV exposure</p>
+        <a href={link} target="_blank" rel="noreferrer" className="text-[12px] text-accent font-medium inline-flex items-center gap-1 hover:brightness-110">prestocks.com<ExternalLink className="w-3 h-3" /></a>
+      </div>
+      {info ? (
+        <>
+          <p className="text-[12.5px] text-ink2 mt-1.5 leading-snug">{info.description}</p>
+          <div className="grid grid-cols-3 gap-2 mt-2.5 text-[12px]">
+            <div><p className="text-muted">Reference valuation</p><p className="font-mono tnum font-semibold text-ink">{info.markValuation ? fmtBig(info.markValuation) : "n/a"}</p></div>
+            <div><p className="text-muted">Implied by token price</p><p className="font-mono tnum font-semibold text-ink">{info.impliedValuation ? fmtBig(info.impliedValuation) : "n/a"}</p></div>
+            <div><p className="text-muted">Token supply</p><p className="font-mono tnum font-semibold text-ink">{info.supply ? Math.round(info.supply).toLocaleString("en-US") : "n/a"}</p></div>
+          </div>
+        </>
+      ) : (
+        <p className="text-[12px] text-muted mt-1.5">Company details load from the PreStocks API when the app's server relay is running.</p>
+      )}
+    </div>
+  );
+}
+
 export default function Trade() {
   const { buyBasket, sync } = useStocklana();
-  const { prices, marks, live } = usePrices();
+  const { prices, marks, live, fetchedAt } = usePrices();
   const { isWatched, toggle } = useWatchlist();
+  const { map: psInfo, updatedAt: psUpdatedAt } = usePreStocks(); // also registers newly listed PreStocks tokens
+  const [, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 15_000); return () => clearInterval(t); }, []);
   const [search, setSearch] = useState("");
   const [sector, setSector] = useState("All");
   const [sort, setSort] = useState("popular");
@@ -48,13 +82,15 @@ export default function Trade() {
     const q = search.trim().toLowerCase();
     const list = Object.entries(TOKENS)
       .filter(([sym, t]) => {
-        if (sector === "Watchlist" ? !isWatched(sym) : sector === "Pre-IPO" ? t.group !== "Pre-IPO" : sector !== "All" && t.sector !== sector) return false;
+        if (sector === "Watchlist" ? !isWatched(sym) : sector === "Pre-IPO" ? t.group !== "Pre-IPO" : sector === "PreStocks" || sector === "Tessera" ? t.issuer !== sector : sector !== "All" && t.sector !== sector) return false;
         return !q || sym.toLowerCase().includes(q) || t.name.toLowerCase().includes(q);
       })
       .map(([sym, t]) => ({ sym, ...t, price: prices[sym] ?? t.price }));
-    const by = { popular: (a, b) => b.liq - a.liq, priceDesc: (a, b) => b.price - a.price, priceAsc: (a, b) => a.price - b.price, name: (a, b) => a.name.localeCompare(b.name) };
+    const by = { popular: (a, b) => (b.liq || 0) - (a.liq || 0), priceDesc: (a, b) => b.price - a.price, priceAsc: (a, b) => a.price - b.price, name: (a, b) => a.name.localeCompare(b.name) };
     return list.sort(by[sort]);
-  }, [search, sector, sort, prices, isWatched]);
+    // psInfo isn't read inside, but it changes when a newly listed PreStocks token is added to TOKENS, which must rebuild the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, sector, sort, prices, isWatched, psInfo]);
 
   const onBuy = async (basket, usd, onlySyms) => {
     const r = await buyBasket(basket, usd, onlySyms);
@@ -89,7 +125,7 @@ export default function Trade() {
         ))}
       </div>
       <div className="flex items-center justify-between mb-2.5 text-[12.5px] text-muted">
-        <span>{rows.length} stock{rows.length === 1 ? "" : "s"} · prices {live ? "live from Jupiter" : "from a snapshot"}</span>
+        <span>{rows.length} stock{rows.length === 1 ? "" : "s"} · {live ? <>prices live from Jupiter{fetchedAt && <>, updated {ago(fetchedAt)}</>}</> : "prices from a snapshot"}{psUpdatedAt && <> · PreStocks data {ago(psUpdatedAt)}</>}</span>
         <label className="flex items-center gap-2">Sort
           <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-surface2 text-ink rounded-lg px-2 py-1 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-accent/40">
             {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
@@ -116,8 +152,8 @@ export default function Trade() {
                   <p className="sm:hidden font-mono tnum font-semibold text-ink text-[14px] mt-0.5">{fmtUSD(r.price)}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent-soft text-accent font-medium">{r.sector}</span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${d.cls}`} title={`About ${fmtUSD(r.liq, 0)} of pool liquidity (${r.venue})`}>{d.label}<span className="hidden sm:inline"> liquidity</span></span>
-                    {r.group === "Pre-IPO" && <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface2 text-cyan font-medium">Pre-IPO</span>}
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${d.cls}`} title={r.liq == null ? "Newly listed: pool liquidity hasn't been measured yet" : `About ${fmtUSD(r.liq, 0)} of pool liquidity (${r.venue})`}>{d.label}<span className="hidden sm:inline"> liquidity</span></span>
+                    {r.group === "Pre-IPO" && <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface2 text-cyan font-medium">Pre-IPO{r.issuer ? ` · ${r.issuer}` : ""}</span>}
                     {(() => { const p = examplePct(r.sym); return <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface2 text-ink2 font-medium whitespace-nowrap" title="Made-up example data to show what a prediction would look like. Not a real forecast.">Outlook <b className={p >= 0 ? "text-gain" : "text-loss"}>{p >= 0 ? "▲ +" : "▼ "}{fmtPct(p, 1)}</b> <span className="text-muted">1M · example</span></span>; })()}
                   </div>
                   {r.group === "Pre-IPO" && marks[r.sym] && (() => {
@@ -140,6 +176,7 @@ export default function Trade() {
               </div>
               {isOpen && (
                 <div className="px-3.5 sm:px-4 pb-4">
+                  {r.issuer === "PreStocks" && <PreStocksInfo info={psInfo[r.mint]} psId={r.psId} />}
                   <StockChart mint={r.mint} sym={r.sym} />
                   <div className="flex flex-wrap items-center gap-2 mt-3">
                     <button onClick={() => setOpen(singleStock(r.sym))} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl2 text-[13.5px] font-semibold bg-accent text-accent-ink hover:brightness-110"><ShoppingCart className="w-4 h-4" />Buy {r.sym}</button>
@@ -154,7 +191,7 @@ export default function Trade() {
       )}
 
       {(sector === "Pre-IPO" || sector === "All") && (
-        <p className="text-[11.5px] text-muted mt-6">Pre-IPO tokens are Tessera T-Tokens: tokenized exposure to private companies (OpenAI, Kalshi, SpaceX), not shares. They can trade far above or below their reference price, and pools are much thinner than for public stocks.</p>
+        <p className="text-[11.5px] text-muted mt-6">Pre-IPO tokens are tokenized exposure to private companies from two issuers, PreStocks (backed 1:1 by SPV exposure) and Tessera (T-Tokens), not shares. They can trade far above or below their reference price, and pools are much thinner than for public stocks.</p>
       )}
       <p className="text-[11.5px] text-muted mt-3">Tokenized stocks are Backed xStocks on Solana. Thin pools mean higher price impact on larger buys; the exact price is confirmed when your wallet signs.</p>
 

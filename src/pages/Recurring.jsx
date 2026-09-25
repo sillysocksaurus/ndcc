@@ -78,9 +78,11 @@ function ProjTooltip({ active, payload, label }) {
 }
 
 export default function Recurring() {
-  const { state, value, cost, costKnown, togglePlan, cancelPlan } = useStocklana();
+  const { state, value, cost, costKnown, togglePlan, cancelPlan, isExample: demoState } = useStocklana();
   const [ret, setRet] = useState(7);
   const isExample = state.plans.length === 0;
+  // Everything on the page is sample data when the plans are our examples, or the whole portfolio is the built-in demo.
+  const allExample = isExample || demoState;
   const plans = isExample ? EXAMPLE_PLANS : state.plans;
   const monthly = plans.filter((p) => p.status === "live").reduce((t, p) => t + p.amount * CADENCE[p.cad].perMonth, 0);
   // Project forward from what you actually hold today, not from zero — otherwise the
@@ -100,6 +102,13 @@ export default function Recurring() {
     <div>
       <h1 className="text-[26px] font-bold leading-tight">Plan it, and see what steady buying builds.</h1>
       <p className="text-ink2 mt-2 max-w-[60ch]">Plan a steady schedule and see what it could grow into. <b className="text-ink">Recurring plans are simulated in this build</b>: nothing is bought automatically and no on-chain order is created, so this is a planner, not an autopilot.</p>
+
+      {allExample && (
+        <div role="note" className="mt-4 rounded-xl2 border border-warn/40 bg-warn-soft px-4 py-3 text-[12.5px] text-warn">
+          <p className="font-semibold">Example data only</p>
+          <p className="mt-0.5 leading-snug">Everything below is sample data to show how this page works: the plans, amounts, dates and the growth chart. None of it comes from your wallet, and nothing is bought or scheduled. Growth figures use an assumed return, so they are an illustration, not a forecast or investment advice.</p>
+        </div>
+      )}
 
       <h2 className="text-[15px] font-semibold text-ink mt-7 mb-2.5">Your plans</h2>
       {isExample && (
